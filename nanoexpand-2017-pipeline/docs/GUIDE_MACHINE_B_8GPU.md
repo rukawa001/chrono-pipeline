@@ -8,7 +8,7 @@
 | Years | `2017`, `upto2012`, `2013`, `2014`, `2015` |
 | Est. wall time | **~7–10 hours** |
 
-Machine A handles `2016` only (heaviest single year, with early 40% subsample).
+Machine A handles `2016` only (40% of raw rows at Stage 0).
 
 ## Prerequisites
 
@@ -43,8 +43,8 @@ tail -f logs/corpus_part_B.log
 
 ```
 corpus/processed/part_B/final/
-  2017_train.jsonl      # subsampled to 70% at end of pipeline
-  upto2012_train.jsonl  # subsampled to 70%
+  2017_train.jsonl      # from 70% of raw rows (Stage 0)
+  upto2012_train.jsonl
   2013_train.jsonl
   2014_train.jsonl
   2015_train.jsonl
@@ -60,7 +60,7 @@ rsync -avz corpus/processed/part_B/ user@train-host:/path/chrono-round8/corpus/p
 
 - **2017** primary training data lives on this machine.
 - Replay years (`upto2012`–`2015`) are smaller and run in parallel with Machine A's 2016 job.
-- Stage 6 subsample: **70%** for all years on PART B (2016 subsample happens on Machine A only).
+- Stage 0 raw subsample: **70%** of rows per year on PART B; **2016 on Machine A: 40%**
 
 ## GPU usage
 
@@ -75,19 +75,18 @@ rsync -avz corpus/processed/part_B/ user@train-host:/path/chrono-round8/corpus/p
 |-------|-----|
 | OOM on classifier | Lower `CLASSIFIER_BATCH_SIZE=128` |
 | vLLM install fails | Try `pip install vllm==0.6.x` matching your CUDA |
-| Need more 2017 rows | Lower subsample prob in `run_part.sh` and re-run Stage 6 only |
+| Need more 2017 rows | Raise `SUBSAMPLE_DEFAULT` in `run_part.sh` and re-run from Stage 0 |
 
-## Re-run subsample only (if needed)
+## Re-run raw subsample only (if needed)
 
 ```bash
 source .venv-corpus/bin/activate
-OUT=../corpus/processed/part_B
+RAW=../corpus/resource
+OUT=../corpus/processed/part_B/stage0_raw
 for y in 2017 upto2012 2013 2014 2015; do
   python corpus_pipeline/subsample.py \
-    --input "$OUT/final/${y}_train_full.jsonl" \
-    --output "$OUT/final/${y}_train.jsonl" \
+    --input "$RAW/${y}.jsonl" \
+    --output "$OUT/${y}.jsonl" \
     --probability 0.70 --seed 42
 done
 ```
-
-(Keep a backup of full `final/` before subsample if you want to re-tune.)

@@ -54,7 +54,7 @@ Expect **8 GPUs busy** during Stage 3 (classifier) and Stage 5 (LLM salvage).
 
 ```
 corpus/processed/part_A/final/
-  2016_train.jsonl   # subsampled to 40% after rules (before dedup/classifier/LLM)
+  2016_train.jsonl   # from 40% of raw 2016 rows (Stage 0)
 ```
 
 Copy entire `corpus/processed/part_A/` to the train machine (or rsync `final/` only).
@@ -65,13 +65,12 @@ rsync -avz corpus/processed/part_A/ user@train-host:/path/chrono-round8/corpus/p
 
 ## Pipeline stages (automatic)
 
-1. Rules — drop ABC boilerplate, wrong year, stubs
-2. **Early subsample** — **2016 at 40%** (before dedup / classifier / LLM)
+1. **Raw subsample** — keep **40%** of raw `2016.jsonl` rows
+2. Rules — drop ABC boilerplate, wrong year, stubs
 3. Dedup — URL + MinHash
 4. Classifier — 8 GPU parallel (FineWeb-Edu, score ≥ 2.0)
 5. Chunk long rows + score chunks
 6. LLM salvage — 8 GPU parallel on borderline rows
-7. (No final subsample for 2016 — already reduced in Stage 2)
 
 ## Troubleshooting
 

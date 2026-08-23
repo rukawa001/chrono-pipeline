@@ -6,8 +6,8 @@ raw_dir: ../corpus/resource
 out_dir: ../corpus/processed
 
 parts:
-  # Balanced for parallel 8×GPU machines (~7–10h each):
-  #   A = 2016 only (early 40% subsample before dedup/classifier/LLM)
+  # Balanced for parallel 8×GPU machines:
+  #   A = 2016 only
   #   B = 2017 + replay years
   A:
     - 2016
@@ -18,8 +18,7 @@ parts:
     - 2014
     - 2015
 
-# 2016: subsample 40% after rules (before dedup) — skips ~60% of heavy GPU work
-subsample_2016_early: true
+# Subsample raw JSONL before pipeline (Stage 0): 40% of 2016 rows, 70% of other years
 
 blocklist:
   - "Now Playing:"

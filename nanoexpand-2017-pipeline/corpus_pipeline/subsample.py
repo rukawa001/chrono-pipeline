@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Random subsample with fixed seed."""
+"""Random subsample with fixed seed. probability=0.40 keeps ~40% of input rows."""
 
 import argparse
 import random

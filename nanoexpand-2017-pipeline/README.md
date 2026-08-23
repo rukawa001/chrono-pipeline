@@ -32,7 +32,7 @@ CUDA_VISIBLE_DEVICES=0 python train/train_continual.py
 
 ## Guides
 
-- `docs/GUIDE_MACHINE_A_8GPU.md` — PART=A (2016 only, early 40% subsample)
+- `docs/GUIDE_MACHINE_A_8GPU.md` — PART=A (2016 only, 40% raw subsample)
 - `docs/GUIDE_MACHINE_B_8GPU.md` — PART=B (2017 + replay years)
 - `docs/GUIDE_TRAIN_1GPU.md` — merge, tokenize, train
 

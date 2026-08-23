@@ -85,6 +85,7 @@ def process_chunk(lines: list[bytes], expect_year: int, cfg: dict, is_upto2012: 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--year-file", required=True, help="e.g. 2017 or upto2012")
+    ap.add_argument("--input", default=None, help="Raw JSONL path (default: raw_dir/{year-file}.jsonl)")
     ap.add_argument("--out-root", required=True, help="e.g. corpus/processed/part_A")
     ap.add_argument("--config", default=None)
     ap.add_argument("--workers", type=int, default=None)
@@ -96,7 +97,10 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
 
     year_file = args.year_file
-    in_path = raw_dir / f"{year_file}.jsonl"
+    if args.input:
+        in_path = Path(args.input)
+    else:
+        in_path = raw_dir / f"{year_file}.jsonl"
     if not in_path.exists():
         raise SystemExit(f"Missing {in_path}")
 
