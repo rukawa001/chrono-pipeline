@@ -6,19 +6,19 @@ raw_dir: ../corpus/resource
 out_dir: ../corpus/processed
 
 parts:
-  # Balanced for parallel 8×GPU machines:
-  #   A = 2016 only
-  #   B = 2017 + replay years
+  # Balanced (~1.0M subsampled raw rows per machine):
+  #   A = 2016 (25%) + 2013–2015 (50%)
+  #   B = 2017 (50%) + upto2012 (50%)
   A:
     - 2016
-  B:
-    - 2017
-    - upto2012
     - 2013
     - 2014
     - 2015
+  B:
+    - 2017
+    - upto2012
 
-# Subsample raw JSONL before pipeline (Stage 0): 40% of 2016 rows, 70% of other years
+# Subsample raw JSONL before pipeline (Stage 0): 50% other years; 2016 25% (~560k from 2.24M)
 
 blocklist:
   - "Now Playing:"
@@ -42,8 +42,8 @@ classifier_batch_size: 256
 llm_model: Qwen/Qwen2.5-7B-Instruct
 llm_max_model_len: 4096
 
-subsample_default: 0.70
-subsample_2016: 0.40
+subsample_raw: 0.50
+subsample_2016: 0.25   # 25% of raw 2016 (~560k rows from 2.24M; half of 50% cut)
 subsample_seed: 42
 
 mix_total_rows: 900000

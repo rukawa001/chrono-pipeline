@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Run corpus pipeline for one machine part (8x A100).
 # Usage:
-#   export PART=A   # Machine A: 2016 only
-#   export PART=B   # Machine B: 2017, upto2012, 2013, 2014, 2015
+#   export PART=A   # Machine A: 2016, 2013, 2014, 2015
+#   export PART=B   # Machine B: 2017, upto2012
 #   ./corpus_pipeline/run_part.sh
 set -euo pipefail
 
@@ -13,8 +13,8 @@ PART="${PART:?Set PART=A or PART=B}"
 NUM_GPUS="${NUM_GPUS:-8}"
 CPU_WORKERS="${CPU_WORKERS:-48}"
 BATCH="${CLASSIFIER_BATCH_SIZE:-256}"
-SUBSAMPLE_DEFAULT="${SUBSAMPLE_DEFAULT:-0.70}"
-SUBSAMPLE_2016="${SUBSAMPLE_2016:-0.40}"
+SUBSAMPLE_RAW="${SUBSAMPLE_RAW:-0.50}"
+SUBSAMPLE_2016="${SUBSAMPLE_2016:-0.25}"
 SUBSAMPLE_SEED="${SUBSAMPLE_SEED:-42}"
 
 if [[ -f "$ROOT/.venv-corpus/bin/activate" ]]; then
@@ -31,9 +31,9 @@ mkdir -p "$OUT/stage0_raw" "$OUT/stage1_rules" "$OUT/stage2_dedup" "$OUT/shards"
          "$OUT/stage3_scored" "$OUT/stage4_chunked" "$OUT/stage5_llm" "$OUT/final"
 
 if [[ "$PART" == "A" ]]; then
-  YEARS=(2016)
+  YEARS=(2016 2013 2014 2015)
 elif [[ "$PART" == "B" ]]; then
-  YEARS=(2017 upto2012 2013 2014 2015)
+  YEARS=(2017 upto2012)
 else
   echo "PART must be A or B"
   exit 1
@@ -43,10 +43,10 @@ log() { echo "[$(date -Iseconds)] $*"; }
 
 log "=== PART $PART years: ${YEARS[*]} ==="
 
-# Stage 0: subsample raw JSONL — 40% of 2016 rows, 70% of other years
-log "Stage 0: raw subsample (2016=${SUBSAMPLE_2016}, others=${SUBSAMPLE_DEFAULT})"
+# Stage 0: subsample raw JSONL — 50% of raw rows (2016 uses subsample_2016)
+log "Stage 0: raw subsample (2016=${SUBSAMPLE_2016}, others=${SUBSAMPLE_RAW})"
 for y in "${YEARS[@]}"; do
-  prob="$SUBSAMPLE_DEFAULT"
+  prob="$SUBSAMPLE_RAW"
   if [[ "$y" == "2016" ]]; then
     prob="$SUBSAMPLE_2016"
   fi

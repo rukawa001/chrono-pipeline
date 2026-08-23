@@ -14,8 +14,8 @@ Assumes corpus parts A + B are already built on the 8×GPU machines.
 ## Prerequisites
 
 1. Both corpus parts synced:
-   - `corpus/processed/part_A/final/` — `2016_train.jsonl`
-   - `corpus/processed/part_B/final/` — `2017`, `upto2012`, `2013`, `2014`, `2015`
+   - `corpus/processed/part_A/final/` — `2016`, `2013`, `2014`, `2015`
+   - `corpus/processed/part_B/final/` — `2017`, `upto2012`
 2. Base checkpoint: `nanoexpand-2016/`
 3. `sn38/` package in repo (registers `sn38-nanoexpand`)
 
@@ -38,7 +38,7 @@ mkdir -p logs checkpoints
 Fixed recipe (no re-analysis):
 
 - **720,000** rows from `2017` (primary)
-- **180,000** replay rows (20%): `2013`–`2016` (loaded from whichever part has each year; A=2016, B=2013–2015)
+- **180,000** replay rows (20%): `2013`–`2016` (loaded from whichever part has each year; A=2016/2013–2015, B=2017 only for primary)
 
 ```bash
 source .venv-train/bin/activate
@@ -108,10 +108,10 @@ Edit `train/config_train.yaml`:
 
 | Phase | Where | Parallel? | Time |
 |-------|-------|-----------|------|
-| Corpus PART A | Machine A 8×GPU (2016) | Yes | ~7–10 h |
-| Corpus PART B | Machine B 8×GPU (2017 + replay) | Yes | ~7–10 h |
+| Corpus PART A | Machine A 8×GPU (2016 + 2013–2015) | Yes | ~5–8 h |
+| Corpus PART B | Machine B 8×GPU (2017 + upto2012) | Yes | ~5–8 h |
 | Merge + train | This machine 1×GPU | After corpus | ~9–15 h |
-| **Wall clock** | | A ∥ B | **~16–25 h** |
+| **Wall clock** | | A ∥ B | **~14–23 h** |
 
 ## Upload for SN38
 
