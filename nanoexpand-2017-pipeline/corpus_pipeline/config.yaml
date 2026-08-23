@@ -1,0 +1,54 @@
+# Corpus pipeline — fixed parameters (no re-analysis required).
+# See docs/GUIDE_MACHINE_A_8GPU.md and docs/GUIDE_MACHINE_B_8GPU.md
+
+# Paths relative to nanoexpand-2017-pipeline/ (repo: chrono-round8)
+raw_dir: ../corpus/resource
+out_dir: ../corpus/processed
+
+parts:
+  A:
+    - upto2012
+    - 2013
+    - 2014
+    - 2015
+  B:
+    - 2016
+    - 2017
+
+blocklist:
+  - "Now Playing:"
+  - "{{"
+  - "Facebook Messenger"
+  - "Set edition preference"
+  - "This transcript has been automatically generated"
+
+min_chars: 200
+train_ready_min_chars: 500
+chunk_threshold_chars: 7200
+chunk_max_chars: 6000
+
+dedup_minhash_threshold: 0.85
+
+classifier_model: HuggingFaceFW/fineweb-edu-classifier
+classifier_min_score: 2.0
+classifier_max_length: 512
+classifier_batch_size: 256
+
+llm_model: Qwen/Qwen2.5-7B-Instruct
+llm_max_model_len: 4096
+
+subsample_default: 0.70
+subsample_2016: 0.40
+subsample_seed: 42
+
+mix_total_rows: 900000
+mix_primary_year: 2017
+mix_replay_fraction: 0.20
+mix_replay_weights:
+  2013: 0.15
+  2014: 0.15
+  2015: 0.20
+  2016: 0.40
+
+num_gpus: 8
+cpu_workers: 48

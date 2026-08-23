@@ -1,0 +1,10 @@
+torch
+transformers>=4.48.0
+accelerate
+huggingface_hub
+orjson
+pyyaml
+datasketch
+tqdm
+vllm
+numpy

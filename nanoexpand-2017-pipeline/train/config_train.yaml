@@ -1,0 +1,26 @@
+# Training defaults for nanoexpand-2017 continual run (1x A100)
+
+base_checkpoint: ../nanoexpand-2016
+mix_jsonl: ../corpus/processed/train_2017_mix.jsonl
+token_bins: ../corpus/processed/train_bins
+output_dir: checkpoints/nanoexpand-2017
+
+seq_len: 2048
+epochs: 2
+batch_size: 4
+gradient_accumulation: 4
+learning_rate: 2.0e-5
+learning_rate_extra_mlp: 1.0e-4
+weight_decay: 0.1
+warmup_steps: 500
+max_grad_norm: 1.0
+
+# Freeze 2016 extra_mlp block indices from nanoexpand-2016 config
+freeze_extra_mlps:
+  - "5"
+  - "11"
+  - "17"
+  - "21"
+  - "24"
+  - "26"
+  - "27"
