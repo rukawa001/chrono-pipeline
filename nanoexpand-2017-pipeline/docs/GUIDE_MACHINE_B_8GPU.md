@@ -5,8 +5,10 @@
 | Setting | Value |
 |---------|--------|
 | `PART` | `B` |
-| Years | `2016`, `2017` |
-| Est. wall time | **~8–12 hours** (heaviest machine) |
+| Years | `2017`, `upto2012`, `2013`, `2014`, `2015` |
+| Est. wall time | **~7–10 hours** |
+
+Machine A handles `2016` only (heaviest single year, with early 40% subsample).
 
 ## Prerequisites
 
@@ -41,8 +43,11 @@ tail -f logs/corpus_part_B.log
 
 ```
 corpus/processed/part_B/final/
-  2016_train.jsonl   # subsampled to 40% at end of pipeline
-  2017_train.jsonl   # subsampled to 70%
+  2017_train.jsonl      # subsampled to 70% at end of pipeline
+  upto2012_train.jsonl  # subsampled to 70%
+  2013_train.jsonl
+  2014_train.jsonl
+  2015_train.jsonl
 ```
 
 Sync to train machine:
@@ -53,9 +58,9 @@ rsync -avz corpus/processed/part_B/ user@train-host:/path/chrono-round8/corpus/p
 
 ## Notes
 
-- **2016** is the largest raw file (~2.2M rows). Dedup + LLM take the most time here.
 - **2017** primary training data lives on this machine.
-- Stage 6 subsample: `2016` → **40%**, `2017` → **70%** (fixed in `run_part.sh`).
+- Replay years (`upto2012`–`2015`) are smaller and run in parallel with Machine A's 2016 job.
+- Stage 6 subsample: **70%** for all years on PART B (2016 subsample happens on Machine A only).
 
 ## GPU usage
 
@@ -68,21 +73,20 @@ rsync -avz corpus/processed/part_B/ user@train-host:/path/chrono-round8/corpus/p
 
 | Issue | Fix |
 |-------|-----|
-| Dedup OOM / slow | Run only `2016` dedup alone; ensure other jobs finished |
+| OOM on classifier | Lower `CLASSIFIER_BATCH_SIZE=128` |
 | vLLM install fails | Try `pip install vllm==0.6.x` matching your CUDA |
-| 2016 subsample too aggressive | Edit `run_part.sh` prob `0.40` → `0.50` and re-run Stage 6 only |
+| Need more 2017 rows | Lower subsample prob in `run_part.sh` and re-run Stage 6 only |
 
 ## Re-run subsample only (if needed)
 
 ```bash
 source .venv-corpus/bin/activate
-OUT=corpus/processed/part_B
-for y in 2016 2017; do
-  prob=0.70; [[ "$y" == "2016" ]] && prob=0.40
+OUT=../corpus/processed/part_B
+for y in 2017 upto2012 2013 2014 2015; do
   python corpus_pipeline/subsample.py \
     --input "$OUT/final/${y}_train_full.jsonl" \
     --output "$OUT/final/${y}_train.jsonl" \
-    --probability "$prob" --seed 42
+    --probability 0.70 --seed 42
 done
 ```
 

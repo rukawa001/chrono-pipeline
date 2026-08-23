@@ -22,6 +22,15 @@ def load_pool(dir_path: Path, year: str) -> list[dict]:
     return rows
 
 
+def load_year_pool(part_a: Path, part_b: Path, year: str) -> list[dict]:
+    """Load year from whichever part directory has it (split is configurable)."""
+    for d in (part_a, part_b):
+        rows = load_pool(d, year)
+        if rows:
+            return rows
+    return []
+
+
 def sample_rows(pool: list[dict], n: int, rng: random.Random) -> list[dict]:
     if n <= 0 or not pool:
         return []
@@ -51,18 +60,16 @@ def main():
     part_a = Path(args.part_a)
     part_b = Path(args.part_b)
 
-    # Primary 2017 lives on part B; fallback part A if missing
-    p2017 = load_pool(part_b, primary_year)
-    if not p2017:
-        p2017 = load_pool(part_a, primary_year)
+    # Primary year and replay pools may live on either part (split is configurable)
+    p2017 = load_year_pool(part_a, part_b, primary_year)
     if not p2017:
         raise SystemExit(f"No {primary_year}_train.jsonl in part_a or part_b")
 
     replay_pools = {
-        "2013": load_pool(part_a, "2013"),
-        "2014": load_pool(part_a, "2014"),
-        "2015": load_pool(part_a, "2015"),
-        "2016": load_pool(part_b, "2016"),
+        "2013": load_year_pool(part_a, part_b, "2013"),
+        "2014": load_year_pool(part_a, part_b, "2014"),
+        "2015": load_year_pool(part_a, part_b, "2015"),
+        "2016": load_year_pool(part_a, part_b, "2016"),
     }
 
     n_replay = int(n_total * replay_frac)

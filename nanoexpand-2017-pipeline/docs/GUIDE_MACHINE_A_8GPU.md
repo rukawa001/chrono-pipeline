@@ -5,10 +5,10 @@
 | Setting | Value |
 |---------|--------|
 | `PART` | `A` |
-| Years | `upto2012`, `2013`, `2014`, `2015` |
-| Est. wall time | **~4–7 hours** |
+| Years | `2016` only |
+| Est. wall time | **~7–10 hours** |
 
-Machine B handles `2016` and `2017` (heavier).
+Machine B handles `2017` plus replay years (`upto2012`, `2013`, `2014`, `2015`).
 
 ## Prerequisites
 
@@ -54,10 +54,7 @@ Expect **8 GPUs busy** during Stage 3 (classifier) and Stage 5 (LLM salvage).
 
 ```
 corpus/processed/part_A/final/
-  upto2012_train.jsonl
-  2013_train.jsonl
-  2014_train.jsonl
-  2015_train.jsonl
+  2016_train.jsonl   # subsampled to 40% after rules (before dedup/classifier/LLM)
 ```
 
 Copy entire `corpus/processed/part_A/` to the train machine (or rsync `final/` only).
@@ -69,11 +66,12 @@ rsync -avz corpus/processed/part_A/ user@train-host:/path/chrono-round8/corpus/p
 ## Pipeline stages (automatic)
 
 1. Rules — drop ABC boilerplate, wrong year, stubs
-2. Dedup — URL + MinHash
-3. Classifier — 8 GPU parallel (FineWeb-Edu, score ≥ 2.0)
-4. Chunk long rows + score chunks
-5. LLM salvage — 8 GPU parallel on borderline rows
-6. Subsample — **70%** per year (40% for 2016 only on Machine B)
+2. **Early subsample** — **2016 at 40%** (before dedup / classifier / LLM)
+3. Dedup — URL + MinHash
+4. Classifier — 8 GPU parallel (FineWeb-Edu, score ≥ 2.0)
+5. Chunk long rows + score chunks
+6. LLM salvage — 8 GPU parallel on borderline rows
+7. (No final subsample for 2016 — already reduced in Stage 2)
 
 ## Troubleshooting
 
@@ -83,6 +81,7 @@ rsync -avz corpus/processed/part_A/ user@train-host:/path/chrono-round8/corpus/p
 | OOM on classifier | Lower `CLASSIFIER_BATCH_SIZE=128` |
 | OOM on vLLM | One 7B model per GPU (default); reduce `gpu_memory_utilization` in `llm_salvage.py` |
 | Slow Stage 1 | Increase `CPU_WORKERS=64` |
+| Dedup OOM / slow | 2016 is the largest file; ensure other stages finished before dedup |
 
 ## After completion
 

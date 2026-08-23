@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Run corpus pipeline for one machine part (8x A100).
 # Usage:
-#   export PART=A   # Machine A: upto2012, 2013, 2014, 2015
-#   export PART=B   # Machine B: 2016, 2017
+#   export PART=A   # Machine A: 2016 only (early 40% subsample)
+#   export PART=B   # Machine B: 2017, upto2012, 2013, 2014, 2015
 #   ./corpus_pipeline/run_part.sh
 set -euo pipefail
 
@@ -13,6 +13,9 @@ PART="${PART:?Set PART=A or PART=B}"
 NUM_GPUS="${NUM_GPUS:-8}"
 CPU_WORKERS="${CPU_WORKERS:-48}"
 BATCH="${CLASSIFIER_BATCH_SIZE:-256}"
+SUBSAMPLE_DEFAULT="${SUBSAMPLE_DEFAULT:-0.70}"
+SUBSAMPLE_2016="${SUBSAMPLE_2016:-0.40}"
+SUBSAMPLE_SEED="${SUBSAMPLE_SEED:-42}"
 
 if [[ -f "$ROOT/.venv-corpus/bin/activate" ]]; then
   source "$ROOT/.venv-corpus/bin/activate"
@@ -27,15 +30,30 @@ mkdir -p "$OUT/stage1_rules" "$OUT/stage2_dedup" "$OUT/shards" \
          "$OUT/stage3_scored" "$OUT/stage4_chunked" "$OUT/stage5_llm" "$OUT/final"
 
 if [[ "$PART" == "A" ]]; then
-  YEARS=(upto2012 2013 2014 2015)
+  YEARS=(2016)
 elif [[ "$PART" == "B" ]]; then
-  YEARS=(2016 2017)
+  YEARS=(2017 upto2012 2013 2014 2015)
 else
   echo "PART must be A or B"
   exit 1
 fi
 
 log() { echo "[$(date -Iseconds)] $*"; }
+
+subsample_buckets() {
+  local year="$1"
+  local prob="$2"
+  for bucket in train_ready needs_chunk needs_llm; do
+    in="$OUT/stage1_rules/${year}_${bucket}.jsonl"
+    if [[ ! -f "$in" ]]; then
+      continue
+    fi
+    tmp="$OUT/stage1_rules/${year}_${bucket}_sub.jsonl"
+    python "$ROOT/corpus_pipeline/subsample.py" \
+      --input "$in" --output "$tmp" --probability "$prob" --seed "$SUBSAMPLE_SEED"
+    mv "$tmp" "$in"
+  done
+}
 
 log "=== PART $PART years: ${YEARS[*]} ==="
 
@@ -48,6 +66,12 @@ for y in "${YEARS[@]}"; do
     --workers "$CPU_WORKERS" &
 done
 wait
+
+# Stage 1b: early subsample 2016 (before dedup / classifier / LLM)
+if [[ " ${YEARS[*]} " == *" 2016 "* ]]; then
+  log "Stage 1b: early subsample 2016 at ${SUBSAMPLE_2016} (before heavy stages)"
+  subsample_buckets 2016 "$SUBSAMPLE_2016"
+fi
 
 # Stage 2: dedup
 log "Stage 2: dedup"
@@ -146,20 +170,19 @@ for y in "${YEARS[@]}"; do
   fi
 done
 
-# Stage 6: subsample (70% default, 40% for 2016)
-log "Stage 6: subsample"
+# Stage 6: subsample non-2016 years (2016 already subsampled in Stage 1b)
+log "Stage 6: subsample (70% for non-2016)"
 for y in "${YEARS[@]}"; do
+  if [[ "$y" == "2016" ]]; then
+    continue
+  fi
   in="$OUT/final/${y}_train.jsonl"
   if [[ ! -f "$in" ]]; then
     continue
   fi
-  prob=0.70
-  if [[ "$y" == "2016" ]]; then
-    prob=0.40
-  fi
   tmp="$OUT/final/${y}_train_sub.jsonl"
   python "$ROOT/corpus_pipeline/subsample.py" \
-    --input "$in" --output "$tmp" --probability "$prob" --seed 42
+    --input "$in" --output "$tmp" --probability "$SUBSAMPLE_DEFAULT" --seed "$SUBSAMPLE_SEED"
   mv "$tmp" "$in"
 done
 
